@@ -1,0 +1,42 @@
+---
+- name: Install Docker
+  hosts: all
+  gather_facts: no
+  become: yes
+  tasks:
+  - name: install python 2
+    raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+
+  - name: Remove Docker repository
+    file: path=/etc/apt/sources.list.d/docker.list state=absent
+
+  - name: install APT-over-SSL packages
+    apt: name={{item}} state=installed update_cache=yes
+    with_items:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+
+  - name: "Install Docker Repo's Public Key"
+    apt_key:
+      url: "https://download.docker.com/linux/ubuntu/gpg"
+      state: present
+
+  - name: Add Docker Sources
+    shell: echo "deb https://download.docker.com/linux/ubuntu xenial stable" > /etc/apt/sources.list.d/docker.list
+
+  - name: Install Docker and PIP
+    apt: name={{item}} state=installed update_cache=yes
+    with_items:
+      - docker-ce
+      - python-pip
+
+  - name: Add Docker-py Module
+    pip: name=docker-py
+
+  - name: Create Docker group
+    group: name=docker state=present
+
+  - name: Add Ubuntu user to Docker group
+    user: name=ubuntu groups=docker
