@@ -5,5 +5,4 @@
   playbook: install-docker.yaml
   folders:
     - { host: "../../Dropbox/Workshops/NetOps/Examples", dir: "/nws" }
-    - { host: "../../Dropbox/Recording", dir: "/Recording" }
 

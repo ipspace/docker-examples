@@ -1,0 +1,25 @@
+version: "3"
+services:
+  web:
+    # replace username/repo:tag with your name and image details
+    image: webapp
+    deploy:
+      replicas: 5
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+      restart_policy:
+        condition: on-failure
+    ports:
+    - "3000:80"
+    networks:
+    - webnet
+  cli:
+    image: busybox
+    networks:
+    - webnet
+    ports:
+    - "3001:22"
+networks:
+  webnet:
