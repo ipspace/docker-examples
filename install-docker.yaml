@@ -7,16 +7,40 @@
   - name: install python 2
     raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
 
+  - name: Gather facts after making sure Python is installed
+    setup:
+
+  - name: Set hostname
+    hostname: name={{inventory_hostname}}
+
+  - name: Insert hosts.local file into /etc/hosts
+    blockinfile:
+      dest: /etc/hosts
+      marker: "### {mark} ANSIBLE file {{item}}"
+      block: "{{ lookup('file',item) }}"
+    with_first_found:
+    - files:
+      - hosts.local
+      skip: true
+
   - name: Remove Docker repository
     file: path=/etc/apt/sources.list.d/docker.list state=absent
 
-  - name: install APT-over-SSL packages
+  - name: install missing APT and Python packages
     apt: name={{item}} state=installed update_cache=yes
     with_items:
       - apt-transport-https
       - ca-certificates
       - curl
       - software-properties-common
+      - python-pip
+
+  - name: Install PIP packages missing on Trusty
+    pip: name={{item}}
+    with_items:
+    - ndg-httpsclient
+    - pyasn1
+    when: ansible_distribution_release == 'trusty'
 
   - name: "Install Docker Repo's Public Key"
     apt_key:
@@ -24,19 +48,28 @@
       state: present
 
   - name: Add Docker Sources
-    shell: echo "deb https://download.docker.com/linux/ubuntu xenial stable" > /etc/apt/sources.list.d/docker.list
+    copy:
+      dest: /etc/apt/sources.list.d/docker.list
+      content: deb https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
 
-  - name: Install Docker and PIP
+  - name: Install Docker
     apt: name={{item}} state=installed update_cache=yes
     with_items:
       - docker-ce
-      - python-pip
 
-  - name: Add Docker-py Module
-    pip: name=docker-py
+  - name: Add Docker-py and Docker Compose
+    pip: name={{item}}
+    with_items:
+    - docker-py
+    - docker-compose
 
   - name: Create Docker group
     group: name=docker state=present
 
   - name: Add Ubuntu user to Docker group
     user: name=ubuntu groups=docker
+    when: ansible_distribution_release == 'xenial'
+
+  - name: Add Vagrant user to Docker group
+    user: name=vagrant groups=docker
+    when: ansible_distribution_release != 'xenial'

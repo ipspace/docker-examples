@@ -1,6 +1,11 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+
 # Specify minimum Vagrant version and Vagrant API version
 Vagrant.require_version ">= 1.6.0"
 VAGRANTFILE_API_VER = "2"
@@ -8,94 +13,58 @@ VAGRANTFILE_API_VER = "2"
 # Plugins we require
 required_plugins = %w(vagrant-junos vagrant-vbguest vagrant-host-shell)
 
-##### START Helper functions
-def install_ssh_key()
-  puts "Adding ssh key to the ssh agent"
-  puts "ssh-add #{Vagrant.source_root}/keys/vagrant"
-  system "ssh-add #{Vagrant.source_root}/keys/vagrant"
+auto = ENV['AUTO_START_SWARM'] || false
+# Increase numworkers if you want more than 3 nodes
+numworkers = 1
+
+# VirtualBox settings
+# Increase vmmemory if you want more than 512mb memory in the vm's
+vmmemory = 512
+# Increase numcpu if you want more cpu's per vm
+numcpu = 1
+
+instances = []
+
+(1..numworkers).each do |n| 
+  instances.push({:name => "worker#{n}", :ip => "192.168.10.#{n+2}"})
 end
 
-def install_plugins(required_plugins)
-  plugins_to_install = required_plugins.select { |plugin| not Vagrant.has_plugin? plugin }
-  if not plugins_to_install.empty?
-    puts "Installing plugins: #{plugins_to_install.join(' ')}"
-    if system "vagrant plugin install #{plugins_to_install.join(' ')}"
-      exec "vagrant #{ARGV.join(' ')}"
-    else
-      abort "Installation of one or more plugins has failed. Aborting."
-    end
+manager_ip = "192.168.10.2"
+
+File.open("./hosts.local", 'w') { |file| 
+  instances.each do |i|
+    file.write("#{i[:ip]} #{i[:name]} #{i[:name]}\n")
   end
-end
-##### END Helper functions
+  file.write("#{manager_ip} manager manager\n")
+}
 
-# Install ssh key
-# 
-# Uncomment the next line if you're using ssh-agent
-# install_ssh_key
-
-# Check certain plugins are installed
-install_plugins required_plugins
-
-# Require YAML module
-require 'yaml'
- 
-# Read YAML file with box details
-vagrant_root = File.dirname(__FILE__)
-hosts = YAML.load_file(vagrant_root + '/topology.yml')
-
-# Lab definition begins here
-Vagrant.configure(VAGRANTFILE_API_VER) do |config|
-  config.vbguest.auto_update = false
-
-  # Iterate through entries in YAML file
-  hosts.each do |host|
-    config.vm.define host["name"] do |srv|
-      srv.vm.box = host["box"]
-
-      if host.key?("forwarded_ports")
-        host["forwarded_ports"].each do |port|
-          srv.vm.network :forwarded_port, guest: port["guest"], host: port["host"], id: port["name"]
-        end
-      end
-
-      if host.key?("links")
-        host["links"].each do |link|
-          ipaddr = if link.key?("ip") then link["ip"] else "169.254.1.11" end
-          srv.vm.network "private_network", virtualbox__intnet: link["name"], ip: ipaddr, auto_config: false
-        end
-      end
-
-      if host.key?("folders")
-        host["folders"].each do |f|
-          srv.vm.synced_folder f["host"], f["dir"]
-        end
-      end
-
-      if host.key?("memory")
-        srv.vm.provider "virtualbox" do |v|
-          v.memory = host["memory"]
-        end
-      end
-
-      if host.key?("playbook")
-        srv.vm.provision "ansible" do |ansible|
-          ansible.playbook = host["playbook"]
-        end
-      end
-
-      # Automatically configure hostnames on vEOS boxes
-      if /vEOS/.match(host['box'])
-        $script = <<-SCRIPT
-          FastCli -p 15 -c "configure
-          hostname $1"
-        SCRIPT
-
-        srv.vm.provision "shell" do |s|
-          s.inline = $script
-          s.args = host["name"]
-        end
-      end
-
+Vagrant.configure("2") do |config|
+    config.vbguest.auto_update = false
+    config.vm.provider "virtualbox" do |v|
+     	v.memory = vmmemory
+    	v.cpus = numcpu
     end
+    
+    config.vm.define "manager" do |i|
+      i.vm.box = "ubuntu/trusty64"
+#      i.vm.hostname = "manager"
+      i.vm.network "private_network", ip: "#{manager_ip}"
+      i.vm.provision "ansible", playbook: "install-docker.yaml"
+      if auto 
+        i.vm.provision "shell", inline: "docker swarm init --advertise-addr #{manager_ip}"
+        i.vm.provision "shell", inline: "docker swarm join-token -q worker > /vagrant/token"
+      end
+    end 
+
+  instances.each do |instance| 
+    config.vm.define instance[:name] do |i|
+      i.vm.box = "ubuntu/trusty64"
+#      i.vm.hostname = instance[:name]
+      i.vm.network "private_network", ip: "#{instance[:ip]}"
+      i.vm.provision "ansible", playbook: "install-docker.yaml"
+      if auto
+        i.vm.provision "shell", inline: "docker swarm join --advertise-addr #{instance[:ip]} --listen-addr #{instance[:ip]}:2377 --token `cat /vagrant/token` #{manager_ip}:2377"
+      end
+    end 
   end
 end

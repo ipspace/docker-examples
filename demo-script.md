@@ -2,6 +2,7 @@
 
 ### Cleanup
 
+    docker swarm leave --force
     docker system prune
 
 Alternative:
@@ -15,6 +16,12 @@ See also [docker cleanup](https://gist.github.com/bastman/5b57ddb3c11942094f8d0a
 
     curl -L https://github.com/docker/compose/releases/download/1.16.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
+
+### Setup images
+
+    docker pull perl:5.20
+    docker pull python:2.7-slim
+    docker pull ubuntu:16.04
 
 ## Namespace demos
 
@@ -68,6 +75,12 @@ Also
 
 ## Docker Networking
 
+### Overview
+
+Show default networks with `docker network ls`
+
+Show installed plugins with `docker plugin ls`
+
 ### Container with no services
 
 * Start two `busybox` images
@@ -94,13 +107,23 @@ Create an isolated network
     docker run -itd --name c1 --network=br0 busybox
     docker run -it --name c2 --network=br0 busybox
 
+Run a container with no network
+
+    docker run -itd --rm --network=none busybox
+
 ### Run a service
 
     docker network create --driver=bridge --subnet=192.168.0.0/24 br0
     docker run -d --network=br0 --name app webapp
+    docker container inspect app
+    docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' webapp
+    curl http://ip-address/
+
+Alternatively, run busybox container in the same network
+
     docker run -it --network=br0 busybox
 
-* Execute
+And resolve service DNS name using Docker DNS server
 
     wget -q -O - http://app/
 
@@ -110,6 +133,37 @@ Create an isolated network
     docker run -it busybox
     # wget -q -O - http://172.17.0.1:4000/
 
+### Docker load balancing
+
+    docker swarm init --advertise-addr 192.168.10.2
+
+    docker network create --driver=overlay --subnet=192.168.1.0/24 \
+    --attachable ov0
+
+    docker service create --name websvc \
+      --network ov0 --publish 4000:80 \
+      --replicas 3 --detach webapp
+
+### Docker swarm
+
+    docker tag webapp ipspace/demo:webapp
+    docker login
+    docker push ipspace/demo:webapp
+
+    docker swarm join-token worker
+
+    docker swarm join --advertise-addr 192.168.10.3 --listen-addr 192.168.10.3:2377 --token 192.168.10.2
+
+    docker service create --name websvc \
+      --network ov0 --publish 4000:80 \
+      --replicas 3 --detach ipspace/demo:webapp
+
+    docker node ps $(docker node ls -q)
+
+    docker service scale websvc=5
+
+    docker node ps $(docker node ls -q)
+
 ## Docker Compose
 
     cd /vagrant/websvc
@@ -117,7 +171,6 @@ Create an isolated network
     docker stack deploy -c docker-compose.yml websvc
 
 From docker host execute `wget http://127.0.0.1:3000/``
-
 
     docker network create --driver=overlay --subnet=192.168.1.0/24 \
     --attachable ov0

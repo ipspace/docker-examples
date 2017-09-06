@@ -1,8 +1,0 @@
----
-- name: dm-1
-  box:  ubuntu/xenial64
-  memory: 2048
-  playbook: install-docker.yaml
-  folders:
-    - { host: "../../Dropbox/Workshops/NetOps/Examples", dir: "/nws" }
-
