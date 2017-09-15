@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask,request
 import os
 import socket
 
@@ -11,8 +11,11 @@ def hello():
 #    except RedisError:
 #        visits = "<i>cannot connect to Redis, counter disabled</i>"
 
-    html = "<b>Hostname:</b> {hostname}<br/>"
-    return html.format(hostname=socket.gethostname())
+    html = """
+<b>Hostname:</b> {hostname}<br/>
+<b>Remote IP:</b> {remoteip}
+"""
+    return html.format(hostname=socket.gethostname(),remoteip=request.remote_addr)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=80)

@@ -10,9 +10,6 @@
 Vagrant.require_version ">= 1.6.0"
 VAGRANTFILE_API_VER = "2"
 
-# Plugins we require
-required_plugins = %w(vagrant-junos vagrant-vbguest vagrant-host-shell)
-
 auto = ENV['AUTO_START_SWARM'] || false
 # Increase numworkers if you want more than 3 nodes
 numworkers = 1
@@ -39,7 +36,7 @@ File.open("./hosts.local", 'w') { |file|
 }
 
 Vagrant.configure("2") do |config|
-    config.vbguest.auto_update = false
+#    config.vbguest.auto_update = false
     config.vm.provider "virtualbox" do |v|
      	v.memory = vmmemory
     	v.cpus = numcpu

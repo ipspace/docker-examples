@@ -19,9 +19,22 @@ See also [docker cleanup](https://gist.github.com/bastman/5b57ddb3c11942094f8d0a
 
 ### Setup images
 
+On manager:
+
     docker pull perl:5.20
     docker pull python:2.7-slim
     docker pull ubuntu:16.04
+
+On worker:
+
+    docker pull python:2.7-slim
+
+### Start web server on second VM
+
+    vagrant ssh worker1
+    cd /vagrant/websvc
+    docker build -t webapp .
+    docker run -p 80:80 -d --name app webapp
 
 ## Namespace demos
 
@@ -42,7 +55,7 @@ Touch a file in the container, find the file in host file system with
 
 ### UID Namespace
 
-Start a new container with docker run -it -v /:/host busybox
+Start a new container with `docker run -it -v /:/host busybox
 
 Execute whoami
 
@@ -83,29 +96,47 @@ Show installed plugins with `docker plugin ls`
 
 ### Container with no services
 
+#### Using default Docker bridge
+
 * Start two `busybox` images
 * inspect /etc/hosts, /etc/resolv.conf and ifconfig
 * show mounts with `mount|grep etc`
-* Check that the busybox images can ping each other, external destinations and the host
+* Check that the busybox images can ping each other
+* Check the IP address used for external connectivity
 
-Create a custom network
+    wget -q -O - http://192.168.10.3
+
+Show dormant containers and kill them.
+
+### Using a custom network
 
     docker network create --driver=bridge --subnet=192.168.0.0/24 br0
     docker run -itd --name c1 --network=br0 busybox
     docker run -it --name c2 --network=br0 busybox
-    docker network rm br0
 
-Create a custom network with container isolation
+Explore DNS and connectivity between C1 and C2.
+
+    docker run -it --name c3 busybox
+
+Explore DNS and connectivity between C3 and C1/C2
+
+    docker stop $(docker ps -aq); docker system prune
+
+### Custom network with container isolation
 
     docker network create --driver=bridge --subnet=192.168.0.0/24 \
       -o "com.docker.network.bridge.enable_icc=false" br0
+    docker run -itd --name c1 --network=br0 busybox
+    docker run -it --name c2 --network=br0 busybox
+
+    docker stop $(docker ps -aq); docker system prune
 
 Create an isolated network
 
     docker network create --driver=bridge --subnet=192.168.0.0/24 \
       --internal internal
-    docker run -itd --name c1 --network=br0 busybox
-    docker run -it --name c2 --network=br0 busybox
+    docker run -itd --name c1 --network=internal busybox
+    docker run -it --name c2 --network=internal busybox
 
 Run a container with no network
 
