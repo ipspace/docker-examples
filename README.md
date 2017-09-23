@@ -108,7 +108,7 @@ Show installed plugins with `docker plugin ls`
 
 Show dormant containers and kill them.
 
-### Using a custom network
+#### Using a custom network
 
     docker network create --driver=bridge --subnet=192.168.0.0/24 br0
     docker run -itd --name c1 --network=br0 busybox
@@ -122,7 +122,7 @@ Explore DNS and connectivity between C3 and C1/C2
 
     docker stop $(docker ps -aq); docker system prune
 
-### Custom network with container isolation
+#### Custom network with container isolation
 
     docker network create --driver=bridge --subnet=192.168.0.0/24 \
       -o "com.docker.network.bridge.enable_icc=false" br0
@@ -131,14 +131,14 @@ Explore DNS and connectivity between C3 and C1/C2
 
     docker stop $(docker ps -aq); docker system prune
 
-Create an isolated network
+#### Isolated network
 
     docker network create --driver=bridge --subnet=192.168.0.0/24 \
       --internal internal
     docker run -itd --name c1 --network=internal busybox
     docker run -it --name c2 --network=internal busybox
 
-Run a container with no network
+#### Container with no network
 
     docker run -itd --rm --network=none busybox
 
@@ -158,11 +158,11 @@ And resolve service DNS name using Docker DNS server
 
     wget -q -O - http://app/
 
-* Restart the service with exposed port
+Restart the service with exposed port
 
     docker run -p 4000:80 -d --name app webapp
     docker run -it busybox
-    # wget -q -O - http://172.17.0.1:4000/
+    wget -q -O - http://172.17.0.1:4000/
 
 ### Docker load balancing
 
@@ -201,8 +201,4 @@ And resolve service DNS name using Docker DNS server
     docker swarm init
     docker stack deploy -c docker-compose.yml websvc
 
-From docker host execute `wget http://127.0.0.1:3000/``
-
-    docker network create --driver=overlay --subnet=192.168.1.0/24 \
-    --attachable ov0
-
+From docker host execute `wget http://127.0.0.1:3000/`
