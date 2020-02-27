@@ -1,0 +1,8 @@
+---
+version: "3"
+services:
+  web:
+    build: websvc
+    image: webapp
+    ports:
+      - "3000:80"

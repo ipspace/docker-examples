@@ -1,0 +1,26 @@
+---
+version: "3"
+services:
+  web:
+    build: websvc
+    image: webapp
+    hostname: websrv
+    ports:
+      - "3000:80"
+    networks:
+      - webnet
+      - appnet
+    depends_on: [ db ]
+  db:
+    build: dbsvc
+    image: dbapp
+    hostname: dbsrv
+    networks:
+      - appnet
+    expose:
+      - 80
+networks:
+  webnet:
+  appnet:
+    internal: true
+

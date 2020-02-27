@@ -22,13 +22,13 @@ numcpu = 1
 
 instances = []
 
-(1..numworkers).each do |n| 
-  instances.push({:name => "worker#{n}", :ip => "192.168.33.#{n+2}"})
+(1..numworkers).each do |n|
+  instances.push({:name => "worker#{n}", :ip => "192.168.10.#{n+2}"})
 end
 
 manager_ip = "192.168.33.2"
 
-File.open("./hosts.local", 'w') { |file| 
+File.open("./hosts.local", 'w') { |file|
   instances.each do |i|
     file.write("#{i[:ip]} #{i[:name]} #{i[:name]}\n")
   end
@@ -41,19 +41,19 @@ Vagrant.configure("2") do |config|
      	v.memory = vmmemory
     	v.cpus = numcpu
     end
-    
+
     config.vm.define "manager" do |i|
       i.vm.box = "bento/ubuntu-18.04"
 #      i.vm.hostname = "manager"
       i.vm.network "private_network", ip: "#{manager_ip}"
       i.vm.provision "ansible", playbook: "install-docker.yaml"
-      if auto 
+      if auto
         i.vm.provision "shell", inline: "docker swarm init --advertise-addr #{manager_ip}"
         i.vm.provision "shell", inline: "docker swarm join-token -q worker > /vagrant/token"
       end
-    end 
+    end
 
-  instances.each do |instance| 
+  instances.each do |instance|
     config.vm.define instance[:name] do |i|
       i.vm.box = "bento/ubuntu-18.04"
 #      i.vm.hostname = instance[:name]
@@ -62,6 +62,6 @@ Vagrant.configure("2") do |config|
       if auto
         i.vm.provision "shell", inline: "docker swarm join --advertise-addr #{instance[:ip]} --listen-addr #{instance[:ip]}:2377 --token `cat /vagrant/token` #{manager_ip}:2377"
       end
-    end 
+    end
   end
 end
