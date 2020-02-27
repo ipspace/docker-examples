@@ -23,7 +23,7 @@ numcpu = 1
 instances = []
 
 (1..numworkers).each do |n|
-  instances.push({:name => "worker#{n}", :ip => "192.168.10.#{n+2}"})
+  instances.push({:name => "worker#{n}", :ip => "192.168.33.#{n+2}"})
 end
 
 manager_ip = "192.168.33.2"
@@ -51,6 +51,12 @@ Vagrant.configure("2") do |config|
         i.vm.provision "shell", inline: "docker swarm init --advertise-addr #{manager_ip}"
         i.vm.provision "shell", inline: "docker swarm join-token -q worker > /vagrant/token"
       end
+      i.vm.provider "virtualbox" do |virtualbox|
+        virtualbox.customize [
+          "modifyvm",:id,
+          "--nicpromisc2", "allow-all"
+          ]
+      end
     end
 
   instances.each do |instance|
@@ -61,6 +67,12 @@ Vagrant.configure("2") do |config|
       i.vm.provision "ansible", playbook: "install-docker.yaml"
       if auto
         i.vm.provision "shell", inline: "docker swarm join --advertise-addr #{instance[:ip]} --listen-addr #{instance[:ip]}:2377 --token `cat /vagrant/token` #{manager_ip}:2377"
+      end
+      i.vm.provider "virtualbox" do |virtualbox|
+        virtualbox.customize [
+          "modifyvm",:id,
+          "--nicpromisc2", "allow-all"
+          ]
       end
     end
   end
