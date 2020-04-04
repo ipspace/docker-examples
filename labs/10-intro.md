@@ -20,6 +20,7 @@ Find previous container, restart it...
 
 Run a tool that is not installed on your system
 
+    perl -v
     docker run perl:latest perl -v
     cd /vagrant/examples
     cat hello-world.pl
@@ -43,6 +44,11 @@ Build and deploy an application
     docker run -p 8080:80 -d webapp
     curl http://127.0.0.1:8080
 
+Stop the web server
+
+    docker ps
+    docker kill <name>
+
 Create a whole application stack, using NetBox as an example:
 
 * postgres
@@ -52,9 +58,12 @@ Create a whole application stack, using NetBox as an example:
 * netbox
 * netbox-worker
 
-    cd /vagrant/examples
-    docker-compose -f netbox-compose.yml up
+Create the application stack
+
+    cd ~/netbox-docker/
+    docker-compose up
 
 Cleanup after demo
 
+    docker-compose down
     docker rm $(docker ps -aq)

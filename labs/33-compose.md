@@ -1,7 +1,11 @@
 # Docker Compose
 
+Prepare for the demo:
+
 * Prune the docker system on manager
 * Clean up the images
+
+Execute:
 
     docker rmi webapp dbapp
 
@@ -23,7 +27,7 @@ In another window execute
     docker ps
     docker network ls
     curl http://127.0.0.1:3000/
-    curl http://127.0.0.1:3000/db/
+    curl http://127.0.0.1:3000/db
 
 ### Logging
 
@@ -31,9 +35,16 @@ In another window execute
 * Stop the app
 * Restart the app as a daemon
 
+Execute:
+
     docker-compose -f stack-compose.yml up -d
 
 * Repeat the CURL requests
+* Inspect the compose logs
+
+Execute:
+
+    docker-compose -f stack-compose.yml logs
 
 ### Cleanup
 
@@ -41,12 +52,16 @@ In another window execute
 
 ## Building and running the app stack
 
+    less stack-compose.yml
     docker-compose -f stack-compose.yml build
     docker-compose -f stack-compose.yml up
 
-* Cleanup
+* Cleanup: inspect stopped containers, cleanup
 
-    docker-compose -f web-compose.yml down --volumes
+Execute:
+
+    docker ps -a
+    docker-compose -f stack-compose.yml down --volumes
 
 ## Run Netbox
 
@@ -55,3 +70,12 @@ In another window execute
     docker-compose port nginx 8080
 
 * Connect to http://192.168.33.2:<port>/
+
+Cleanup:
+
+    docker ps -a
+    docker-compose stop
+    docker ps -a
+    docker-compose down
+    docker volume ls
+    docker-compose down --volumes

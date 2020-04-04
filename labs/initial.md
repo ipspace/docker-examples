@@ -1,3 +1,5 @@
+This file contains the old demo script used in pre-2020 Docker Workshop. Do not use.
+
 ## Preparation
 
 ### Cleanup

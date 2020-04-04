@@ -4,6 +4,7 @@
 * In the repository's root directory execute `vagrant up manager` (for a single node setup)
   or `vagrant up` to create a manager and a Swarm worker node
 * Log into the Docker VM with `vagrant ssh manager`
+* If you want to change the prompt execute `. /vagrant/.bash_profile`
 
 ## Cleanup
 
@@ -28,6 +29,7 @@ Pull images to make the labs run faster. On manager:
     docker pull python:2.7-slim
     docker pull python:3-slim
     docker pull ubuntu:16.04
+    docker pull ubuntu:latest
 
 On worker:
 

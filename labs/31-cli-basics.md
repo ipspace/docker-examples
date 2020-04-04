@@ -60,6 +60,7 @@ instead of container ID in further **docker** commands.
     docker ps
     docker logs busy
     docker kill busy
+    docker rm busy
 
 ## Execute additional commands in a container
 
@@ -75,12 +76,34 @@ Start an interactive shell in that container:
 
     docker exec -it busy sh
 
+## Map host directories
+
+Map a host directory into a container directory:
+
+    docker run -it -v $(pwd):/work busybox
+    docker run -it -v $(pwd):/work -w /work busybox
+    docker run -it -v $(pwd):/work -w /work busybox ls
+
+Mount the root file system just for the giggles:
+
+    docker run -it -v /:/host busybox
+
 ## Cleanup after demo
 
 * List all Docker containers
 * Display a short list of container IDs
 * Remove all containers
 
+Execute:
+
     docker ps -a
     docker ps -aq
     docker rm $(docker ps -aq)
+
+* List all images
+* Remove an image
+
+Execute:
+
+    docker image ls
+    docker rmi <name>
