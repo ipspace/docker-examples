@@ -2,7 +2,7 @@
 
 ### Process Namespaces
 
-    docker run -it busybox
+    docker run -it --rm busybox
     ps -elf
     top
 
@@ -12,22 +12,21 @@ Execute `ps -elf` within another terminal window
 
 Start a new container with
 
-    docker run -it -v /:/host busybox`
+    docker run -it --rm -v /:/parent busybox
 
 Execute `whoami`
 
-Explore /etc/passwd, /host/etc/passwd, /host/etc/shadow. Display host mount
+Explore /etc/passwd, /parent/etc/passwd, /parent/etc/shadow. Display host mount
 
-    mount|grep host
-    mount|grep "host "
+    mount|grep parent
 
 Start container with the root process running as current UID
 
-    docker run -u $UID -it -v /:/host busybox`
+    docker run -u $UID -it --rm -v /:/parent busybox
 
 Start a new container and try to shut down Ethernet interface
 
-    docker run -it alpine
+    docker run -it --rm alpine
     ifconfig eth0 down
 
 ### Mount Point Namespaces
@@ -60,7 +59,7 @@ Also
 
 * Inspect layers with `docker container inspect name` and `docker history`
 
-Persistent storage: volumes
+### Persistent storage: volumes
 
     docker volume create scratch
     docker run -it -v scratch:/work busybox
