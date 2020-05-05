@@ -37,14 +37,14 @@ In another window execute
 
 Execute:
 
-    docker-compose -f stack-compose.yml up -d
+    docker-compose -f web-compose.yml up -d
 
 * Repeat the CURL requests
 * Inspect the compose logs
 
 Execute:
 
-    docker-compose -f stack-compose.yml logs
+    docker-compose -f web-compose.yml logs
 
 ### Cleanup
 

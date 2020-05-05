@@ -79,7 +79,7 @@ Find where the volume is:
 
 ### Build a New Image
 
-    cd /vagrant/websvc
+    cd /vagrant/app/websvc
     docker build -t webapp .
 
 * Explore the image with `docker history webapp`
