@@ -2,8 +2,7 @@
 version: "3"
 services:
   web:
-    build: websvc
-    image: webapp
+    image: ipspace/demo:webapp
     hostname: websrv
     ports:
       - "3000:80"
@@ -11,14 +10,17 @@ services:
       - webnet
       - appnet
     depends_on: [ db ]
+    deploy:
+      mode: replicated
+      replicas: 3
   db:
-    build: dbsvc
-    image: dbapp
+    image: ipspace/demo:dbapp
     hostname: dbsrv
     networks:
       - appnet
-    expose:
-      - 80
+    deploy:
+      mode: replicated
+      replicas: 2
 networks:
   webnet:
   appnet:
