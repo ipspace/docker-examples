@@ -1,20 +1,26 @@
 # Single Host Docker Networking
 
-## Overview
+Preparation:
+
+```
+docker swarm leave --force
+docker system prune --force
+```
+
+Start `webapp` container on the `worker1` node
+
+```
+cd /vagrant/app/
+docker build -t webapp websvc
+docker run --rm -d -p 3000:80 --name web webapp
+```
+
+## Intro: containers with services on default Docker bridge
+
+This section demonstrates Docker networking for containers using default Docker bridge without service ports exposed in the container image.
 
 Show default networks with `docker network ls`
-
 Show installed plugins with `docker plugin ls`
-
-## Run containers without services
-
-This section demonstrates Docker networking for containers
-without service ports exposed in the container image.
-
-Before starting examples in this section, start `webapp`
-container on the worker1 node.
-
-### Default Docker bridge
 
 * Start two `busybox` images
 
@@ -22,39 +28,41 @@ container on the worker1 node.
 docker run --name C1 --rm -it busybox
 ```
 
-* inspect /etc/hosts, /etc/resolv.conf and ifconfig
+* inspect interfaces with `ifconfig`
+* inspect routing table with `ip route`
+* inspect /etc/hosts and /etc/resolv.conf
 * show mounts with `mount|grep etc`
-* Check that the busybox images can ping each other
+* Check that the busybox images can ping each other and the Linux host
 * Check the IP address used for external connectivity
 
 ```
 wget -q -O - http://192.168.33.3:3000
 ```
 
-Show dormant containers and kill them.
 
-### Using a custom network
+## Using a custom bridge network
 
 ```
 docker network create --driver=bridge --subnet=192.168.99.0/24 br0
-docker run -itd --name c1 --network=br0 busybox
-docker run -itd --name c3 busybox
-docker run -it --name c2 --network=br0 busybox
+docker run -itd --rm --name c1 --network=br0 busybox
+docker run -itd --rm --name c3 busybox
+docker inspect c1 c3|jq -f /vagrant/filter/ipaddr
+docker run -it --rm --name c2 --network=br0 busybox
 ```
 
-Explore DNS and connectivity between C1 and C2.
+Explore DNS and connectivity toward C1 and C3.
 
 ```
-docker run -it --name c3 busybox
+docker run -it --name c4 --rm busybox
 ```
 
-Explore DNS and connectivity between C3 and C1/C2
+Explore DNS and connectivity toward C1 and C3.
 
 ```
-docker stop $(docker ps -aq); docker system prune
+docker stop $(docker ps -aq); docker system prune --force
 ```
 
-### Custom network with container isolation
+## Custom networks with container isolation
 
 ```
 docker network create --driver=bridge --subnet=192.168.99.0/24 \
@@ -63,7 +71,7 @@ docker run -itd --name c1 --network=br0 busybox
 docker run -itd --name c3 busybox
 docker run -it --name c2 --network=br0 busybox
 
-docker stop $(docker ps -aq); docker system prune
+docker stop $(docker ps -aq); docker system prune --force
 ```
 
 ### Isolated network
@@ -76,10 +84,20 @@ docker run -itd --name c3 busybox
 docker run -it --name c2 --network=internal busybox
 ```
 
-### Container with no network
+### Special network types
+
+Container without a network
 
 ```
 docker run -itd --rm --network=none busybox
+```
+
+Container within host namespace
+
+```
+docker run -itd --rm --network=host busybox
+ifconfig
+ip route
 ```
 
 ### Run a service

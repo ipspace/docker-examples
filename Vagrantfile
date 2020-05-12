@@ -54,8 +54,8 @@ Vagrant.configure("2") do |config|
       i.vm.provider "virtualbox" do |virtualbox|
         virtualbox.customize [
           "modifyvm",:id,
-          "--nicpromisc2", "allow-all"
-          ]
+          "--nicpromisc2", "allow-all",
+          "--clipboard", "bidirectional"]
       end
     end
 
