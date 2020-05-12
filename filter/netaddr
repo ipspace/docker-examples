@@ -1,0 +1,8 @@
+.[]|{ 
+  Name,
+  Gateway: .IPAM.Config[]|.Gateway,
+  Endpoints: [
+    .Containers|to_entries[]|{ 
+      Name: .value.Name, IPv4: .value.IPv4Address }
+  ]
+}

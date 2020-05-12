@@ -1,0 +1,6 @@
+.[]|{ 
+  Name,
+  Network: (
+    .NetworkSettings.Networks|to_entries[])|{ 
+      net: .key, ip: .value.IPAddress, gw: .value.Gateway } 
+}
