@@ -1,4 +1,6 @@
 from flask import Flask,request
+from flask import Response
+
 import os
 import socket
 import requests
@@ -17,6 +19,10 @@ def hello():
 <b>Remote IP:</b> {remoteip}
 """
     return html.format(hostname=socket.gethostname(),remoteip=request.remote_addr)
+
+@app.route("/headers")
+def headers():
+  return Response(str(request.headers),mimetype='text/plain')
 
 @app.route("/db")
 def dbconnect():
