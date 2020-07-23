@@ -1,5 +1,10 @@
 # Docker Swarm
 
+NOTE: This file contains the commands used to generate the printouts in the
+*Docker Swarm Networking* part of
+*[Docker Networking Deep Dive](https://www.ipspace.net/Docker_Networking_Deep_Dive)*
+webinar. Watch the webinar for full explanation of command printouts and their meaning.
+
 Set up swarm on manager node
 
 ```
@@ -15,69 +20,121 @@ docker swarm leave -f
 docker swarm join --token ... (copied from manager)
 ```
 
-## Create an Overlay Network
+## Default Docker Swarm Networking
+
+Create an overlay network
 
 ```
 docker network create --driver=overlay --subnet=192.168.1.0/24 \
   --attachable ov0
-docker run --rm --network ov0 busybox ifconfig
+```
 
+Start a background Alpine container (to keep terminal window free)
+and use **docker inspect** to find out its configuration.
+
+```
+docker run -itd --rm --network ov0 --name test alpine
+docker inspect test
+docker network inspect docker_gwbridge
+```
+
+Disconnect the test container from **docker_gwbridge**
+
+```
+docker network disconnect docker_gwbridge test
+docker inspect test
+docker network inspect docker_gwbridge
+```
+
+## Swarm Overlay Networks
+
+```
 docker network ls
 brctl
+```
 
-sudo ip netns
+Inspecting Docker namespaces:
 
-cd /var/run
+```
 sudo ln -s /var/run/docker/netns /var/run
 sudo ip netns
+sudo ip netns exec <ns> brctl show
+```
 
-docker run --rm --network ov0 -itd busybox
+Instantiate a container and explore the overlay virtual network namespace:
+
+```
+docker run -itd --rm --network ov0 --name test alpine
 sudo ip netns
+docker network ls
+sudo ip netns exec <ns> brctl show
 sudo ip netns exec <ns> ip address
 ```
 
-## Docker swarm node load balancing
+Deploy another Alpine container on a worker node. Explore VXLAN interface parameters
+
+```
+sudo ip netns exec <ns> bridge fdb show dev vxlan0
+sudo ip netns exec <ns> ip neighbor
+sudo ip netns exec <ns> ip -d link show vxlan0
+```
+
+## Publishing a port from a standalone container
+
+Run a container with a published port (using Alpine image to be able to execute **bash** commands)
+
+```
+docker run -itd --rm --network ov0 --name test -p 8080:80 alpine
+```
+
+Inspect IP address within the container and host NAT table:
+
+```
+sudo iptables -t nat -S
+docker exec test ifconfig
+```
+
+## Load balancing in Docker Swarm
+
+Create a multi-instance service
 
 ```
 docker service create --name websvc \
-  --network ov0 --publish 4000:80 \
+  --network ov0 --publish 8080:80 \
   --replicas 3 webapp
+docker service ls
+docker service ps websvc
 docker ps
 docker inspect <id>
-
-sudo iptables -t nat -S
-docker network inspect ingress
-docker network inspect docker_gwbridge
-docker network inspect ov0
 ```
 
-## Start a swarm service
+Inspect containers attached to **docker_gwbridge**
 
 ```
-docker tag webapp ipspace/demo:webapp
-docker login
-docker push ipspace/demo:webapp
-
-docker service create --name websvc \
-  --network ov0 --publish 4000:80 \
-  --replicas 3 ipspace/demo:webapp
-
 docker ps
-docker node ps
-
-docker node ps $(docker node ls -q)
-
-docker service scale websvc=5
-
-docker node ps $(docker node ls -q)
+sudo ip netns (* find container namespace based on container ID *)
+sudo ip netns exec <id> ip address show
+docker network inspect docker_gwbridge
 ```
 
-## Docker Compose
+Inspect NAT table to find published service port
 
-    cd /vagrant/websvc
-    docker swarm init
-    docker stack deploy -c docker-compose.yml websvc
-    docker stack services websvc
-    docker stack ps services
+```
+sudo iptables -t nat -S
+```
 
-From docker host execute `curl http://127.0.0.1:3000/`
+Inspect iptables and IPVS setup in **ingress** namespace:
+
+```
+sudo ip netns exec ingress_sbox ip address
+sudo ip netns exec ingress_sbox iptables -t nat -S
+sudo ip netns exec ingress_sbox ipvsadm -ln
+sudo ip netns exec ingress_sbox iptables -t mangle -S
+```
+
+Inspect NAT table in service container
+
+```
+sudo ip netns exec <id> ip address
+sudo ip netns exec <id> iptables -t nat -S
+```
