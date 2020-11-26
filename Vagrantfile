@@ -46,7 +46,7 @@ Vagrant.configure("2") do |config|
       i.vm.box = "bento/ubuntu-18.04"
 #      i.vm.hostname = "manager"
       i.vm.network "private_network", ip: "#{manager_ip}"
-      i.vm.provision "ansible", playbook: "install-docker.yaml"
+      i.vm.provision "ansible", playbook: "install-docker-host.yaml"
       if auto
         i.vm.provision "shell", inline: "docker swarm init --advertise-addr #{manager_ip}"
         i.vm.provision "shell", inline: "docker swarm join-token -q worker > /vagrant/token"
@@ -64,7 +64,7 @@ Vagrant.configure("2") do |config|
       i.vm.box = "bento/ubuntu-18.04"
 #      i.vm.hostname = instance[:name]
       i.vm.network "private_network", ip: "#{instance[:ip]}"
-      i.vm.provision "ansible", playbook: "install-docker.yaml"
+      i.vm.provision "ansible", playbook: "install-docker-host.yaml"
       if auto
         i.vm.provision "shell", inline: "docker swarm join --advertise-addr #{instance[:ip]} --listen-addr #{instance[:ip]}:2377 --token `cat /vagrant/token` #{manager_ip}:2377"
       end
